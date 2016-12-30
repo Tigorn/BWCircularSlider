@@ -18,11 +18,11 @@ struct Config {
 
 // MARK: Math Helpers
 func DegreesToRadians (_ value:Double) -> Double {
-    return value * M_PI / 180.0
+    return value * .pi / 180.0
 }
 
 func RadiansToDegrees (_ value:Double) -> Double {
-    return value * 180.0 / M_PI
+    return value * 180.0 / .pi
 }
 
 func Square (_ value:CGFloat) -> CGFloat {
@@ -35,12 +35,12 @@ class BWCircularSlider: UIControl {
 
     var textField: UITextField?
     var radius: CGFloat = 0
-    var angle: Int = 360
+    var angle = 360
     var startColor = UIColor.blue
     var endColor = UIColor.purple
 
     // Custom initializer
-    convenience init(startColor:UIColor, endColor:UIColor, frame:CGRect){
+    convenience init(startColor: UIColor, endColor: UIColor, frame: CGRect) {
         self.init(frame: frame)
 
         self.startColor = startColor
@@ -61,13 +61,13 @@ class BWCircularSlider: UIControl {
         let font = UIFont(name: "Avenir", size: Config.TB_FONTSIZE)
         //Calculate font size needed to display 3 numbers
         let str = "000" as NSString
-        let fontSize: CGSize = str.size(attributes: [NSFontAttributeName:font!])
+        let fontSize = str.size(attributes: [NSFontAttributeName:font!])
 
         //Using a TextField area we can easily modify the control to get user input from this field
         let textFieldRect = CGRect(
             x: (frame.size.width  - fontSize.width) / 2.0,
             y: (frame.size.height - fontSize.height) / 2.0,
-            width: fontSize.width, height: fontSize.height);
+            width: fontSize.width, height: fontSize.height)
 
         textField = UITextField(frame: textFieldRect)
         textField?.backgroundColor = UIColor.clear
@@ -113,49 +113,52 @@ class BWCircularSlider: UIControl {
 
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
 
-
         /** Draw the Background **/
-        ctx.addArc(center: CGPoint(x: CGFloat(self.frame.size.width / 2.0), y: CGFloat(self.frame.size.height / 2.0)), radius: radius, startAngle: 0, endAngle: CGFloat(M_PI * 2), clockwise: false)
+        var startAngle: CGFloat = 0
+        var endAngle = CGFloat(M_PI * 2)
+        var strokeWidth: CGFloat = 72
+        var center = CGPoint(x: self.frame.midX, y: self.frame.midY)
+        var radius = self.radius
 
-        //void CGContextAddArc(CGContextRef c, CGFloat x, CGFloat y, CGFloat radius, CGFloat startAngle, CGFloat endAngle, int clockwise)
-        //CGContextAddArc(ctx, CGFloat(self.frame.size.width / 2.0), CGFloat(self.frame.size.height / 2.0), radius, 0, CGFloat(M_PI * 2), 0)
-
-        UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0).set()
-
-        ctx.setLineWidth(72)
+        ctx.setStrokeColor(UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0).cgColor)
+        ctx.setLineWidth(strokeWidth)
         ctx.setLineCap(.butt)
-        //ctx.setLineCap(kCGLineCapButt)
-
-
+        ctx.addArc(center: center,
+                   radius: radius,
+                   startAngle: startAngle,
+                   endAngle: endAngle,
+                   clockwise: false)
         ctx.drawPath(using: .stroke)
 
-
         /** Draw the circle **/
-
         /** Create THE MASK Image **/
-        UIGraphicsBeginImageContext(CGSize(width: self.bounds.size.width,height: self.bounds.size.height));
+        UIGraphicsBeginImageContext(CGSize(width: self.bounds.size.width, height: self.bounds.size.height))
 
         guard let imageCtx = UIGraphicsGetCurrentContext() else { return }
 
-        imageCtx.addArc(center: CGPoint(x: CGFloat(self.frame.size.width/2), y: CGFloat(self.frame.size.height/2)), radius: radius, startAngle: 0, endAngle: CGFloat(DegreesToRadians(Double(angle))), clockwise: false)
+        startAngle = 0
+        endAngle = CGFloat(DegreesToRadians(Double(angle)))
+        strokeWidth = 72
+        center = CGPoint(x: self.frame.midX, y: self.frame.midY)
+        radius = self.radius
 
-        //CGContextAddArc(imageCtx, CGFloat(self.frame.size.width/2)  , CGFloat(self.frame.size.height/2), radius, 0, CGFloat(DegreesToRadians(Double(angle))) , 0);
-        UIColor.red.set()
-
-        //Use shadow to create the Blur effect
-        imageCtx.setShadow(offset: CGSize(width: 0, height: 0), blur: CGFloat(self.angle/15), color: UIColor.black.cgColor);
-
-        //define the path
+        imageCtx.setStrokeColor(UIColor.red.cgColor)
         imageCtx.setLineWidth(Config.TB_LINE_WIDTH)
+        imageCtx.setLineCap(.butt)
+        imageCtx.setShadow(offset: CGSize(width: 0, height: 0), blur: CGFloat(self.angle/15), color: UIColor.black.cgColor)
+        imageCtx.addArc(center: center,
+                   radius: radius,
+                   startAngle: startAngle,
+                   endAngle: endAngle,
+                   clockwise: false)
         imageCtx.drawPath(using: .stroke)
 
         //save the context content into the image mask
-        let mask: CGImage = UIGraphicsGetCurrentContext()!.makeImage()!;
-        UIGraphicsEndImageContext();
+        let mask: CGImage = UIGraphicsGetCurrentContext()!.makeImage()!
+        UIGraphicsEndImageContext()
 
         /** Clip Context to the mask **/
         ctx.saveGState()
-
         ctx.clip(to: self.bounds, mask: mask)
 
 
